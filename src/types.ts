@@ -7,21 +7,31 @@ export enum CATEGORIES {
 }
 
 export type TUser = { 
-	id: string, 
+	name: string, 
 	email: string,
     password: string
 }
 
+// export type TProduct = {
+//     id: string,
+//     name: string,
+//     price: number,
+//     category: CATEGORIES
+// }
 export type TProduct = {
-    id: string,
     name: string,
     price: number,
-    category: CATEGORIES
+    description: string,
+    imageUrl: string
 }
  
 export type TPurchase = {
-    userId: string,
-    productId: string,
-    quantity: number,
+    buyer: string
     totalPrice: number
 }
+// export type TPurchase = {
+//     userId: string,
+//     productId: string,
+//     quantity: number,
+//     totalPrice: number
+// }

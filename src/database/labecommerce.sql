@@ -169,4 +169,34 @@ INSERT into purchases_products (
 
 SELECT * FROM purchases_products
 INNER JOIN products ON purchases_products.product_id = products.id
-INNER JOIN purchases ON purchases_products.purchase_id = purchases.id
+INNER JOIN purchases ON purchases_products.purchase_id = purchases.id;
+
+-- REFATORANDO AS TABELAS users, products e purchases
+DROP TABLE users;
+DROP TABLE products;
+DROP TABLE purchases;
+
+CREATE TABLE users (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    email TEXT UNIQUE NOT NULL,
+    password TEXT NOT NULL,
+    createdAt TEXT DEFAULT (DATETIME('now','localtime'))
+);
+
+CREATE TABLE products (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    name TEXT NOT NULL,
+    price REAL NOT NULL,
+    description TEXT NOT NULL,
+    imageUrl TEXT NOT NULL
+);
+
+CREATE TABLE purchases (
+    id INTEGER PRIMARY KEY AUTOINCREMENT,
+    buyer TEXT NOT NULL,
+    totalPrice REAL NOT NULL,
+    createdAt TEXT DEFAULT (DATETIME('now','localtime')),
+    paid BOOLEAN DEFAULT 0,
+    FOREIGN KEY (buyer) REFERENCES users(id)
+);
