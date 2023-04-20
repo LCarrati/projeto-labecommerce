@@ -157,8 +157,8 @@ CREATE TABLE purchases_products (
     purchase_id TEXT NOT NULL,
     product_id TEXT NOT NULL,
     quantity INTEGER NOT NULL,
-    FOREIGN KEY (product_id) REFERENCES products.id,
-    FOREIGN KEY (purchase_id) REFERENCES purchases.id
+    FOREIGN KEY (product_id) REFERENCES products(id),
+    FOREIGN KEY (purchase_id) REFERENCES purchases(id)
 );
 
 INSERT into purchases_products (
@@ -166,6 +166,8 @@ INSERT into purchases_products (
         ("002", '3', 3),
         ("002", '4', 1)
 );
+
+DROP TABLE purchases_products;
 
 SELECT * FROM purchases_products
 INNER JOIN products ON purchases_products.product_id = products.id
@@ -189,12 +191,13 @@ CREATE TABLE products (
     name TEXT NOT NULL,
     price REAL NOT NULL,
     description TEXT NOT NULL,
+    stock INTEGER NOT NULL,
     imageUrl TEXT NOT NULL
 );
 
 CREATE TABLE purchases (
-    id INTEGER PRIMARY KEY AUTOINCREMENT,
-    buyer TEXT NOT NULL,
+    id string PRIMARY KEY UNIQUE,
+    buyer number NOT NULL,
     totalPrice REAL NOT NULL,
     createdAt TEXT DEFAULT (DATETIME('now','localtime')),
     paid BOOLEAN DEFAULT 0,

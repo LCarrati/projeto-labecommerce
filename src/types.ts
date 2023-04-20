@@ -22,13 +22,15 @@ export type TProduct = {
     name: string,
     price: number,
     description: string,
+    stock: number,
     imageUrl: string
 }
  
-export type TPurchase = {
-    buyer: string
-    totalPrice: number
-}
+// export type TPurchase = {
+//     buyer: string,
+//     quantity: number,
+//     productId: number
+// }
 // export type TPurchase = {
 //     userId: string,
 //     productId: string,
