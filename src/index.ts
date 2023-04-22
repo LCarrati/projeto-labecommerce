@@ -1,4 +1,4 @@
-import { TProduct, TUser } from "./types"
+import { TProduct, TPurchase, TUser } from "./types"
 
 import express, { Request, Response } from 'express';
 import { db } from "./database/knex"
@@ -11,10 +11,7 @@ app.use(cors());
 
 app.get('/users', async (req: Request, res: Response) => {
     try {
-        // const result = await db.raw(`
-        //     SELECT * FROM users;
-        // `)
-        const result: any = await db("users")
+        const result: Array<TUser> = await db("users")
         if (!result[0]) {
             res.status(404)
             throw new Error("Usuários não encontrados");
@@ -35,10 +32,7 @@ app.get('/users', async (req: Request, res: Response) => {
 
 app.get('/products', async (req: Request, res: Response) => {
     try {
-        // const products = await db.raw(`
-        //     SELECT * FROM products;
-        // `)
-        const products = await db(`products`)
+        const products: Array<TProduct> = await db(`products`)
         if (!products[0]) {
             res.status(404)
             throw new Error("Produtos não encontrados");
@@ -93,7 +87,7 @@ app.post('/users', async (req: Request, res: Response) => {
 
         if (name === undefined || email === undefined || password === undefined) {
             res.status(400)
-            throw new Error("Requisição incompleta");
+            throw new Error("Dados incompletos");
         } else {
             if (typeof name !== 'string') {
                 res.status(400);
@@ -179,16 +173,8 @@ app.post('/products', async (req: Request, res: Response) => {
                 throw new Error("imageUrl deve ser uma string");
             }
         }
-        // if (category !== undefined) {
-        //     if (category !== CATEGORIES.ACCESSORIES && category !== CATEGORIES.CLOTHES_AND_SHOES && category !== CATEGORIES.ELETROS) {
-        //         res.status(400);
-        //         throw new Error("Categria inválida");
-        //     }
-        // }
         const productExists = await db("products").where({ name: name });
-        // const productExists = await db.raw (`
-        //     SELECT * FROM products WHERE name = "${name}";
-        // `)
+
         if (productExists[0]) {
             res.status(409)
             throw new Error("Produto já cadastrado");
@@ -200,12 +186,9 @@ app.post('/products', async (req: Request, res: Response) => {
             stock,
             imageUrl
         }
-        // products.push(newProduct);
+
         await db("products").insert(newProduct);
-        // await db.raw(`
-        //     INSERT INTO products (name, price, description, imageUrl)
-        //     VALUES ("${newProduct.name}", "${newProduct.price}", "${newProduct.description}", "${newProduct.imageUrl}");
-        // `)
+
         res.status(201).send('Produto cadastrado com sucesso!');
     } catch (error) {
         console.log(error);
@@ -220,19 +203,19 @@ app.post('/products', async (req: Request, res: Response) => {
     }
 })
 
-
 app.post('/purchases', async (req: Request, res: Response) => {
     try {
         const { buyerId, products } = req.body
-        // const {buyer, totalPrice}: TPurchase = req.body
         const purchaseId = Math.floor(Date.now() * Math.random()).toString(36);
         let total_price = 0;
-        const purchase = {
+        const purchase: TPurchase = {
             id: purchaseId,
             totalPrice: total_price,
             buyer: buyerId,
         };
         await db('purchases').insert(purchase);
+
+
         for (const { productId, quantity } of products) {
             const product = await db('products')
                 .select('price', 'stock')
@@ -248,13 +231,16 @@ app.post('/purchases', async (req: Request, res: Response) => {
                 quantity: quantity,
             };
             await db('purchases_products').insert(purchaseProduct);
+
             const totalPrice = product[0].price * quantity;
             total_price += totalPrice;
             const newStock = product[0].stock - quantity;
+
             await db('products')
                 .where('id', productId)
                 .update({ stock: newStock });
         }
+
         await db('purchases')
             .where({ 'id': purchaseId })
             .update({ totalPrice: total_price });
@@ -276,11 +262,7 @@ app.post('/purchases', async (req: Request, res: Response) => {
 app.get('/products/:id', async (req: Request, res: Response) => {
     try {
         const id = req.params.id
-        const productExist = await db("products").where({ id: id });
-        // const productExist = await db.raw(`
-        //     SELECT * FROM products WHERE id = "${id}";
-        // `)
-        // const result = products.find(product => product.id === id)
+        const productExist: Array<TProduct> = await db("products").where({ id: id });
 
         if (!productExist[0]) {
             res.status(404)
@@ -307,21 +289,14 @@ app.get('/products/:id', async (req: Request, res: Response) => {
 app.get('/users/:id/purchases', async (req: Request, res: Response) => {
     try {
         const id = req.params.id
-        const userExist = await db("users").where({ id: id })
-        // const userExist = await db.raw(`
-        //     SELECT * FROM users WHERE id = "${id}";
-        // `)
-        // const result = purchases.filter(purchase => purchase.userId === id)
+        const userExist: Array<TUser> = await db("users").where({ id: id })
 
         if (!userExist[0]) {
             res.status(400);
             throw new Error("Usuário não encontrado");
         }
 
-        const result = await db('purchases').where({ buyer: id })
-        // const result = await db.raw(`
-        //     SELECT * FROM purchases WHERE buyer = "${id}";
-        // `)
+        const result: Array<TPurchase> = await db('purchases').where({ buyer: id })
 
         res.status(201).send(result)
     } catch (error) {
@@ -340,7 +315,7 @@ app.get('/users/:id/purchases', async (req: Request, res: Response) => {
 app.delete('/purchases/:id', async (req: Request, res: Response) => {
     try {
         const id = req.params.id
-        const purchaseExists = await db('purchases').where({ id: id })
+        const purchaseExists: Array<TPurchase> = await db('purchases').where({ id: id })
 
         if (purchaseExists[0]) {
             await db('purchases').del().where({ id: id })
@@ -368,18 +343,11 @@ app.delete('/purchases/:id', async (req: Request, res: Response) => {
 app.delete('/products/:id', async (req: Request, res: Response) => {
     try {
         const id = req.params.id
-        // const productIndex = products.findIndex(product => product.id === id)
 
-        const productExists = await db('products').where({ id: id })
-        // const productExists = await db.raw(`
-        //     SELECT * FROM products WHERE id = "${id}";
-        // `)
+        const productExists: Array<TProduct> = await db('products').where({ id: id })
 
         if (productExists[0]) {
             await db('products').del().where({ id: id })
-            // await db.raw(`
-            //     DELETE FROM products WHERE id = "${id}";
-            // `)
             res.status(201).send('Produto deletado com sucesso')
         } else {
             res.status(404)
@@ -404,18 +372,13 @@ app.delete('/products/:id', async (req: Request, res: Response) => {
 app.put('/users/:id', async (req: Request, res: Response) => {
     const { newEmail, newPassword } = req.body
     const id = req.params.id;
-    // const newEmail = req.body.email as string | undefined;
-    // const newPassword = req.body.password as string | undefined;
 
     if (!id) {
         res.status(400);
         throw new Error("ID não informada");
     }
-    const userExists = await db("users").where({ id: id });
-    // const userExists = await db.raw(`
-    //     SELECT * FROM users WHERE id = "${id}";
-    // `)
-    // const user = users.find(user => user.id === id);
+    const userExists: Array<TUser> = await db("users").where({ id: id });
+
     if (!userExists[0]) {
         res.status(404);
         throw new Error("Usuário não encontrado");
@@ -424,9 +387,6 @@ app.put('/users/:id', async (req: Request, res: Response) => {
     if (newEmail != undefined) {
         if (typeof newEmail === "string") { //colocar um regex aqui pra validar o formato email
             await db("users").update({ email: newEmail }).where({ id: id })
-            // await db.raw(`
-            //     UPDATE users SET email = "${newEmail}" WHERE id = "${id}";
-            // `)
         } else {
             res.status(400);
             throw new Error("email inválido");
@@ -435,50 +395,33 @@ app.put('/users/:id', async (req: Request, res: Response) => {
     if (newPassword != undefined) {
         if (typeof newPassword === "string") { //colocar um regex aqui pra validar o formato email
             await db("users").update({ password: newPassword }).where({ id: id })
-            // await db.raw(`
-            //     UPDATE users SET password = "${newPassword}" WHERE id = "${id}";
-            // `)
         } else {
             res.status(400);
             throw new Error("email inválido");
         }
     }
-    // if (user) {
-    //     user.email = newEmail || user.email;
-    //     user.password = newPassword || user.password;
-    // }
 
     res.status(200).send("Cadastro atualizado com sucesso")
 })
 
 app.put('/products/:id', async (req: Request, res: Response) => {
     const id = req.params.id;
-    // const newName = req.body.name as string | undefined;
-    // const newPrice = req.body.price as number | undefined;
-    // const newCategory = req.body.category as CATEGORIES | undefined //isso daqui não filtra NADA!!
-
     const { newName, newPrice, newDescription, newImageUrl, newStock } = req.body;
 
     if (!id) {
         res.status(400);
         throw new Error("ID não informada");
     }
-    const productExists = await db("products").where({ id: id })
-    // const productExists = await db.raw(`
-    //     SELECT * FROM products WHERE id = "${id}";
-    // `)
-    // const user = users.find(user => user.id === id);
+    const productExists: Array<TProduct> = await db("products").where({ id: id })
+
     if (!productExists[0]) {
         res.status(404);
         throw new Error("Produto não encontrado");
     }
-    // const product = products.find(product => product.id === id);
+
     if (newName != undefined) {
-        if (typeof newName === "string") { //colocar um regex aqui pra validar o formato email
+        if (typeof newName === "string") {
             await db('products').update({ name: newName }).where({ id: id })
-            // await db.raw(`
-            //     UPDATE products SET name = "${newName}" WHERE id = "${id}";
-            // `)
         } else {
             res.status(400);
             throw new Error("Nome inválido");
@@ -487,54 +430,35 @@ app.put('/products/:id', async (req: Request, res: Response) => {
     if (newPrice != undefined) {
         if (typeof newPrice === "number") {
             await db('products').update({ price: newPrice }).where({ id: id })
-            // await db.raw(`
-            //     UPDATE products SET price = "${newPrice}" WHERE id = "${id}";
-            // `)
         } else {
             res.status(400);
-            throw new Error("Nome inválido");
+            throw new Error("Preço inválido");
         }
     }
     if (newStock != undefined) {
         if (typeof newStock === "number") {
             await db('products').update({ stock: newStock }).where({ id: id })
-            // await db.raw(`
-            //     UPDATE products SET price = "${newPrice}" WHERE id = "${id}";
-            // `)
         } else {
             res.status(400);
-            throw new Error("Nome inválido");
+            throw new Error("Estoque inválido");
         }
     }
     if (newDescription != undefined) {
         if (typeof newDescription === "string") {
             await db('products').update({ description: newDescription }).where({ id: id })
-            // await db.raw(`
-            //     UPDATE products SET description = "${newDescription}" WHERE id = "${id}";
-            // `)
         } else {
             res.status(400);
-            throw new Error("Nome inválido");
+            throw new Error("Descrição inválida");
         }
     }
     if (newImageUrl != undefined) {
-        if (typeof newImageUrl === "string") { //colocar um regex aqui pra validar o formato URL
+        if (typeof newImageUrl === "string") { // colocar tb um regex pra validar formado URL.
             await db('products').update({ imageUrl: newImageUrl }).where({ id: id })
-            // await db.raw(`
-            //     UPDATE products SET imageUrl = "${newImageUrl}" WHERE id = "${id}";
-            // `)
         } else {
             res.status(400);
             throw new Error("URL inválido");
         }
     }
-
-
-    // if (product) {
-    //     product.name = newName || product.name;
-    //     product.price = newPrice || product.price;
-    //     product.category = newCategory || product.category
-    // }
 
     res.status(200).send("Produto atualizado com sucesso")
 })
@@ -542,17 +466,13 @@ app.put('/products/:id', async (req: Request, res: Response) => {
 app.get('/purchases/:id', async (req: Request, res: Response) => {
     try {
         const id = req.params.id;
-
-        const purchaseExists = await db("purchases").where({ id: id });
+        const purchaseExists: Array<TPurchase> = await db("purchases").where({ id: id });
 
         if (!purchaseExists[0]) {
             res.status(404);
             throw new Error("Compra não encontrada");
         }
 
-        // const purchaseInfo = await db('purchases').where({id: id})
-        // console.log(purchaseInfo)
-        // const productInfo = await db('purchases_products').where({'purchase_id':id}).innerJoin('products', 'purchase_id', 'products.id')
         const purchaseInfo = await db('purchases')
             .select(
                 'purchases.id as purchaseId',
@@ -595,9 +515,7 @@ app.get('/purchases/:id', async (req: Request, res: Response) => {
             email,
             productsList,
         };
-        // console.log(productInfo)
-        // // await db('purchases').select('purchases.id as purchase_id').where({id:id}).innerJoin('users', 'purchases.id', 'users.id')
-        // const result = {purchaseInfo, productInfo}
+
         res.status(200).send(purchase)
 
     } catch (error) {
